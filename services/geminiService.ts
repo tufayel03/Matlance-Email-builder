@@ -44,11 +44,12 @@ Your goal is to generate or modify production-ready HTML email code that renders
 export const generateEmailTemplateStream = async function* (
   prompt: string, 
   currentHtml?: string,
-  apiKey?: string
+  apiKey?: string,
+  model: string = 'gemini-3-flash-preview'
 ): AsyncGenerator<string, void, unknown> {
   const finalApiKey = apiKey || process.env.API_KEY;
   if (!finalApiKey) {
-    throw new Error("API Key is missing. Please set process.env.API_KEY or provide one in settings.");
+    throw new Error("API Key is missing. Please enter your Gemini API Key in the settings (Key icon in top right).");
   }
 
   const ai = new GoogleGenAI({ apiKey: finalApiKey });
@@ -67,9 +68,8 @@ export const generateEmailTemplateStream = async function* (
   }
 
   try {
-    // Using gemini-3-pro-preview for complex coding tasks and advanced reasoning
     const responseStream = await ai.models.generateContentStream({
-      model: 'gemini-3-pro-preview',
+      model: model,
       contents: fullPrompt,
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
@@ -86,6 +86,7 @@ export const generateEmailTemplateStream = async function* (
 
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw new Error("Failed to generate template. Please try again.");
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Gemini API Error: ${errorMessage}`);
   }
 };

@@ -25,6 +25,8 @@ function App() {
     }
     return '';
   });
+  // Default to Flash for better stability/quotas
+  const [model, setModel] = useState('gemini-3-flash-preview');
   
   // Resizing Logic
   const [leftWidth, setLeftWidth] = useState(30); // Percentage
@@ -85,8 +87,8 @@ function App() {
       // Clear content to show live generation starting
       setHtmlContent("");
 
-      // Pass the local API key state to the service
-      const stream = generateEmailTemplateStream(text, contextHtml, apiKey);
+      // Pass the local API key and selected model to the service
+      const stream = generateEmailTemplateStream(text, contextHtml, apiKey, model);
 
       // 3. Process Stream
       for await (const chunk of stream) {
@@ -134,6 +136,8 @@ function App() {
           isGenerating={isGenerating}
           apiKey={apiKey}
           onApiKeyChange={handleApiKeyChange}
+          model={model}
+          onModelChange={setModel}
         />
       </div>
 

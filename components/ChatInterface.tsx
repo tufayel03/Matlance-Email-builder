@@ -8,6 +8,8 @@ interface ChatInterfaceProps {
   isGenerating: boolean;
   apiKey: string;
   onApiKeyChange: (key: string) => void;
+  model: string;
+  onModelChange: (model: string) => void;
 }
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ 
@@ -15,7 +17,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSendMessage, 
   isGenerating,
   apiKey,
-  onApiKeyChange
+  onApiKeyChange,
+  model,
+  onModelChange
 }) => {
   const [inputText, setInputText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
@@ -37,6 +41,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
     }
   }, [inputText]);
+
+  // Check if the last message was an error to highlight settings
+  const lastMessageIsError = messages.length > 0 && messages[messages.length - 1].role === 'model' && (
+      messages[messages.length - 1].content.includes('API Key') || 
+      messages[messages.length - 1].content.includes('Error')
+  );
 
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -70,7 +80,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
         </div>
         <button 
           onClick={() => setShowSettings(!showSettings)} 
-          className={`p-2 rounded-full transition-colors ${showSettings ? 'text-blue-400 bg-[#282a2c]' : 'text-gray-400 hover:text-gray-200'}`}
+          className={`p-2 rounded-full transition-colors ${
+            showSettings 
+                ? 'text-blue-400 bg-[#282a2c]' 
+                : lastMessageIsError && !apiKey
+                    ? 'text-red-400 bg-red-900/20 animate-pulse'
+                    : 'text-gray-400 hover:text-gray-200'
+          }`}
           title="API Settings"
         >
           <KeyIcon className="w-5 h-5" />
@@ -79,23 +95,40 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="px-4 py-3 bg-[#1e1f20] border-b border-gray-700 animate-in fade-in slide-in-from-top-2">
-           <label className="text-xs text-gray-400 mb-2 block uppercase tracking-wider font-semibold">Gemini API Key</label>
-           <div className="relative">
-             <input
-               type="password"
-               value={apiKey}
-               onChange={(e) => onApiKeyChange(e.target.value)}
-               className="w-full bg-[#282a2c] text-white px-4 py-2 pr-10 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-all"
-               placeholder="Enter your API Key here..."
-             />
-             <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {apiKey ? <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div> : <div className="w-2 h-2 bg-gray-600 rounded-full"></div>}
-             </div>
+        <div className="px-4 py-3 bg-[#1e1f20] border-b border-gray-700 animate-in fade-in slide-in-from-top-2 space-y-3">
+           <div>
+               <label className="text-xs text-gray-400 mb-1.5 block uppercase tracking-wider font-semibold">Gemini API Key</label>
+               <div className="relative">
+                 <input
+                   type="password"
+                   value={apiKey}
+                   onChange={(e) => onApiKeyChange(e.target.value)}
+                   className="w-full bg-[#282a2c] text-white px-4 py-2 pr-10 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm transition-all"
+                   placeholder="Enter your API Key here..."
+                 />
+                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {apiKey ? <div className="w-2 h-2 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div> : <div className="w-2 h-2 bg-gray-600 rounded-full"></div>}
+                 </div>
+               </div>
+               <p className="text-[10px] text-gray-500 mt-1">
+                 Saved locally. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Get a key</a>.
+               </p>
            </div>
-           <p className="text-[10px] text-gray-500 mt-2">
-             Leave empty to use <code>process.env.API_KEY</code>. Key is saved locally.
-           </p>
+           
+           <div>
+               <label className="text-xs text-gray-400 mb-1.5 block uppercase tracking-wider font-semibold">Model</label>
+               <select 
+                value={model}
+                onChange={(e) => onModelChange(e.target.value)}
+                className="w-full bg-[#282a2c] text-white px-3 py-2 rounded-lg border border-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none text-sm appearance-none"
+               >
+                   <option value="gemini-3-flash-preview">Gemini 3 Flash (Fast &amp; Reliable)</option>
+                   <option value="gemini-3-pro-preview">Gemini 3 Pro (Complex Reasoning)</option>
+               </select>
+               <p className="text-[10px] text-gray-500 mt-1">
+                 Use Flash for speed/quotas. Use Pro for complex layouts.
+               </p>
+           </div>
         </div>
       )}
 
@@ -117,7 +150,9 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               className={`max-w-[85%] rounded-2xl px-5 py-3 text-sm leading-relaxed ${
                 msg.role === 'user' 
                   ? 'bg-[#282a2c] text-white rounded-br-none' 
-                  : 'bg-transparent text-gray-200'
+                  : msg.content.includes('Error') || msg.content.includes('API Key')
+                    ? 'bg-red-900/20 text-red-200 border border-red-800'
+                    : 'bg-transparent text-gray-200'
               }`}
             >
                {msg.role === 'model' && (
