@@ -1,0 +1,5 @@
+{
+  "name": "Matlance Email Builder",
+  "description": "An advanced, AI-powered email template generator with a Gemini-like interface. Generates inline-CSS HTML email templates with side-by-side code and preview visualization.",
+  "requestFramePermissions": []
+}
